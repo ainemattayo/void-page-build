@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,64 +5,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Users } from "lucide-react";
+import { adminQueries, transformers } from '@/lib/supabase-admin';
+import { useQuery } from '@tanstack/react-query';
 
 const AdvisorDirectory = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const advisors = [
-    {
-      name: "Sarah Johnson",
-      location: "London, UK",
-      linkedin: "linkedin.com/in/sarahjohnson",
-      expertise: ["Product Management", "Go-to-Market"],
-      matchingStatus: "Already matched",
-      foundersAssigned: ["Amara Okafor"],
-      timezone: "GMT",
-      notes: "Excellent at international expansion strategies, has scaled 3 startups in Africa"
-    },
-    {
-      name: "Michael Chen",
-      location: "San Francisco, USA",
-      linkedin: "linkedin.com/in/michaelchen",
-      expertise: ["FinTech", "Fundraising"],
-      matchingStatus: "Ready to be matched",
-      foundersAssigned: ["Amara Okafor"],
-      timezone: "PST",
-      notes: "Former VP at Stripe, deep FinTech expertise, African market experience"
-    },
-    {
-      name: "Jennifer Liu",
-      location: "Toronto, Canada",
-      linkedin: "linkedin.com/in/jenniferliu",
-      expertise: ["Supply Chain", "Operations"],
-      matchingStatus: "Already matched",
-      foundersAssigned: ["Kwame Asante"],
-      timezone: "EST",
-      notes: "Supply chain optimization expert, worked with 10+ AgriTech companies"
-    },
-    {
-      name: "David Rodriguez",
-      location: "Barcelona, Spain",
-      linkedin: "linkedin.com/in/davidrodriguez",
-      expertise: ["HealthTech", "Regulatory"],
-      matchingStatus: "Already matched",
-      foundersAssigned: ["Fatima Hassan"],
-      timezone: "CET",
-      notes: "Former McKinsey partner, specialized in healthcare innovation"
-    }
-  ];
+  const { data: advisorsData, isLoading } = useQuery({
+    queryKey: ['advisors-with-founders'],
+    queryFn: adminQueries.getAdvisorsWithFounders
+  });
+
+  const advisors = advisorsData ? transformers.transformAdvisorData(advisorsData) : [];
 
   const filteredAdvisors = advisors.filter(advisor =>
-    advisor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    advisor.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    advisor.expertise.some(exp => exp.toLowerCase().includes(searchTerm.toLowerCase()))
+    advisor.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    advisor.location_country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    advisor.expertise_areas?.some((exp: string) => exp.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const getStatusColor = (status: string) => {
-    return status === "Ready to be matched" 
-      ? "bg-green-100 text-green-800" 
-      : "bg-blue-100 text-blue-800";
-  };
+  if (isLoading) {
+    return <div>Loading advisors...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -123,15 +86,15 @@ const AdvisorDirectory = () => {
                 <TableRow key={index}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{advisor.name}</div>
+                      <div className="font-medium">{advisor.full_name}</div>
                       <div className="text-sm text-blue-600 hover:underline cursor-pointer">
-                        {advisor.linkedin}
+                        {advisor.linkedin_url}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{advisor.location}</div>
+                      <div className="font-medium">{advisor.location_city}, {advisor.location_country}</div>
                       <Badge variant="outline" className="mt-1 text-xs">
                         {advisor.timezone}
                       </Badge>
@@ -139,7 +102,7 @@ const AdvisorDirectory = () => {
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
-                      {advisor.expertise.map((skill, idx) => (
+                      {advisor.expertise_areas?.map((skill: string, idx: number) => (
                         <Badge key={idx} variant="secondary" className="text-xs mr-1">
                           {skill}
                         </Badge>
@@ -147,13 +110,13 @@ const AdvisorDirectory = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStatusColor(advisor.matchingStatus)}>
-                      {advisor.matchingStatus}
+                    <Badge className={transformers.getAdvisorStatusColor(advisor.status)}>
+                      {advisor.status}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
-                      {advisor.foundersAssigned.map((founder, idx) => (
+                      {advisor.foundersAssigned.map((founder: string, idx: number) => (
                         <Badge key={idx} variant="outline" className="text-xs">
                           {founder}
                         </Badge>

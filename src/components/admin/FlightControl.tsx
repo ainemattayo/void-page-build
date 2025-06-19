@@ -1,32 +1,67 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Users, Settings, Home, FileText, ArrowUp, ArrowDown } from "lucide-react";
+import { adminQueries, transformers } from '@/lib/supabase-admin';
+import { useQuery } from '@tanstack/react-query';
 
 const FlightControl = () => {
-  const currentWeekTodos = [
-    { task: "Review 3 new founder applications", priority: "high", due: "Today" },
-    { task: "Schedule Q2 advisor onboarding", priority: "medium", due: "Wednesday" },
-    { task: "Follow up on Session #47 outcomes", priority: "high", due: "Tomorrow" },
-    { task: "Prepare monthly KPI report", priority: "low", due: "Friday" }
-  ];
+  const { data: metrics } = useQuery({
+    queryKey: ['dashboard-metrics'],
+    queryFn: adminQueries.getDashboardMetrics
+  });
+
+  const { data: timeline } = useQuery({
+    queryKey: ['program-timeline'],
+    queryFn: adminQueries.getProgramTimeline
+  });
+
+  const { data: forms } = useQuery({
+    queryKey: ['active-forms'],
+    queryFn: adminQueries.getActiveForms
+  });
+
+  const { data: calendars } = useQuery({
+    queryKey: ['calendars'],
+    queryFn: adminQueries.getCalendars
+  });
+
+  const { data: tools } = useQuery({
+    queryKey: ['tools'],
+    queryFn: adminQueries.getTools
+  });
+
+  const { data: todos } = useQuery({
+    queryKey: ['pending-todos'],
+    queryFn: adminQueries.getPendingTodos
+  });
 
   const kpiSnapshot = [
-    { metric: "Active Founders", value: "28", change: "+3", trend: "up" },
-    { metric: "Active Advisors", value: "19", change: "+1", trend: "up" },
-    { metric: "Sessions This Month", value: "45", change: "+12", trend: "up" },
-    { metric: "Case Studies Ready", value: "8", change: "+2", trend: "up" }
-  ];
-
-  const timeline = [
-    { month: "Month 1", phase: "Onboarding & Matching", status: "completed", founders: 15, advisors: 10 },
-    { month: "Month 2", phase: "First Advisory Sessions", status: "active", founders: 28, advisors: 19 },
-    { month: "Month 3", phase: "Masterclasses Begin", status: "upcoming", founders: 25, advisors: 18 },
-    { month: "Month 4", phase: "Progress Reviews", status: "planned", founders: 20, advisors: 15 },
-    { month: "Month 5", phase: "Case Study Collection", status: "planned", founders: 18, advisors: 12 },
-    { month: "Month 6", phase: "Final Reports & Graduation", status: "planned", founders: 15, advisors: 10 }
+    { 
+      metric: "Active Founders", 
+      value: metrics?.active_founders_count?.toString() || "0", 
+      change: "+3", 
+      trend: "up" 
+    },
+    { 
+      metric: "Active Advisors", 
+      value: metrics?.active_advisors_count?.toString() || "0", 
+      change: "+1", 
+      trend: "up" 
+    },
+    { 
+      metric: "Sessions This Month", 
+      value: metrics?.sessions_this_month?.toString() || "0", 
+      change: "+12", 
+      trend: "up" 
+    },
+    { 
+      metric: "Case Studies Ready", 
+      value: metrics?.case_studies_ready?.toString() || "0", 
+      change: "+2", 
+      trend: "up" 
+    }
   ];
 
   return (
@@ -67,34 +102,31 @@ const FlightControl = () => {
             <div className="space-y-2">
               <h4 className="font-medium text-sm text-gray-700">Active Forms</h4>
               <div className="space-y-1">
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  📝 Post-Session Reflection
-                </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  📋 Advisor Feedback Form
-                </Button>
+                {forms?.map((form) => (
+                  <Button key={form.id} variant="outline" size="sm" className="w-full justify-start">
+                    {form.icon} {form.name}
+                  </Button>
+                ))}
               </div>
             </div>
             <div className="space-y-2">
               <h4 className="font-medium text-sm text-gray-700">Calendars</h4>
               <div className="space-y-1">
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  📅 Master Session Calendar
-                </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  🎓 Masterclass Schedule
-                </Button>
+                {calendars?.map((calendar) => (
+                  <Button key={calendar.id} variant="outline" size="sm" className="w-full justify-start">
+                    {calendar.icon} {calendar.name}
+                  </Button>
+                ))}
               </div>
             </div>
             <div className="space-y-2">
               <h4 className="font-medium text-sm text-gray-700">Tools</h4>
               <div className="space-y-1">
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  📊 Airtable Database
-                </Button>
-                <Button variant="outline" size="sm" className="w-full justify-start">
-                  💬 Zoom Admin Panel
-                </Button>
+                {tools?.map((tool) => (
+                  <Button key={tool.id} variant="outline" size="sm" className="w-full justify-start">
+                    {tool.icon} {tool.name}
+                  </Button>
+                ))}
               </div>
             </div>
           </div>
@@ -112,7 +144,7 @@ const FlightControl = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {timeline.map((period, index) => (
+            {timeline?.map((period, index) => (
               <div key={index} className="flex items-center justify-between p-4 rounded-lg border">
                 <div className="flex items-center gap-4">
                   <Badge 
@@ -122,13 +154,13 @@ const FlightControl = () => {
                     {period.status}
                   </Badge>
                   <div>
-                    <h4 className="font-medium">{period.month}</h4>
-                    <p className="text-sm text-gray-600">{period.phase}</p>
+                    <h4 className="font-medium">Month {period.month_number}</h4>
+                    <p className="text-sm text-gray-600">{period.title}</p>
                   </div>
                 </div>
                 <div className="text-right text-sm text-gray-600">
-                  <div>{period.founders} Founders</div>
-                  <div>{period.advisors} Advisors</div>
+                  <div>{period.founders_involved} Founders</div>
+                  <div>{period.advisors_involved} Advisors</div>
                 </div>
               </div>
             ))}
@@ -147,20 +179,19 @@ const FlightControl = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {currentWeekTodos.map((todo, index) => (
+            {todos?.map((todo, index) => (
               <div key={index} className="flex items-center justify-between p-3 rounded-lg border">
                 <div className="flex items-center gap-3">
                   <Badge 
-                    variant={todo.priority === 'high' ? 'destructive' : 
-                           todo.priority === 'medium' ? 'secondary' : 'outline'}
+                    variant={transformers.getPriorityColor(todo.priority)}
                     className="text-xs"
                   >
                     {todo.priority}
                   </Badge>
-                  <span className="font-medium">{todo.task}</span>
+                  <span className="font-medium">{todo.title}</span>
                 </div>
                 <div className="text-sm text-gray-600">
-                  Due: {todo.due}
+                  Due: {todo.due_date ? new Date(todo.due_date).toLocaleDateString() : 'No due date'}
                 </div>
               </div>
             ))}

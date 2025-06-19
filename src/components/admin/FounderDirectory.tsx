@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,75 +5,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Users, Check, X } from "lucide-react";
+import { adminQueries, transformers } from '@/lib/supabase-admin';
+import { useQuery } from '@tanstack/react-query';
 
 const FounderDirectory = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
-  const founders = [
-    {
-      name: "Amara Okafor",
-      country: "Nigeria",
-      sector: "FinTech",
-      stage: "Series A",
-      website: "payfast.ng",
-      bottleneck: "International expansion strategy",
-      advisors: ["Sarah Johnson", "Michael Chen"],
-      bottleneckSolved: true,
-      storyReady: true,
-      testimonialsCollected: true
-    },
-    {
-      name: "Kwame Asante",
-      country: "Ghana",
-      sector: "AgriTech",
-      stage: "Seed",
-      website: "farmconnect.gh",
-      bottleneck: "Supply chain optimization",
-      advisors: ["Jennifer Liu"],
-      bottleneckSolved: false,
-      storyReady: false,
-      testimonialsCollected: true
-    },
-    {
-      name: "Fatima Hassan",
-      country: "Kenya",
-      sector: "HealthTech",
-      stage: "Pre-Seed",
-      website: "meditrack.ke",
-      bottleneck: "Product-market fit",
-      advisors: ["David Rodriguez", "Angela Wright"],
-      bottleneckSolved: true,
-      storyReady: true,
-      testimonialsCollected: false
-    },
-    {
-      name: "Thabo Molefe",
-      country: "South Africa",
-      sector: "EdTech",
-      stage: "Seed",
-      website: "learnza.co.za",
-      bottleneck: "User acquisition",
-      advisors: ["Maria Santos"],
-      bottleneckSolved: false,
-      storyReady: false,
-      testimonialsCollected: false
-    }
-  ];
+  const { data: foundersData, isLoading } = useQuery({
+    queryKey: ['founders-with-advisors'],
+    queryFn: adminQueries.getFoundersWithAdvisors
+  });
+
+  const founders = foundersData ? transformers.transformFounderData(foundersData) : [];
 
   const filteredFounders = founders.filter(founder =>
-    founder.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    founder.country.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    founder.sector.toLowerCase().includes(searchTerm.toLowerCase())
+    founder.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    founder.location_country?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    founder.sector?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getStageColor = (stage: string) => {
-    switch (stage) {
-      case "Pre-Seed": return "bg-yellow-100 text-yellow-800";
-      case "Seed": return "bg-blue-100 text-blue-800";
-      case "Series A": return "bg-green-100 text-green-800";
-      default: return "bg-gray-100 text-gray-800";
-    }
-  };
+  if (isLoading) {
+    return <div>Loading founders...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -134,35 +86,35 @@ const FounderDirectory = () => {
                 <TableRow key={index}>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{founder.name}</div>
+                      <div className="font-medium">{founder.full_name}</div>
                       <div className="text-sm text-gray-500">{founder.website}</div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div>
-                      <div className="font-medium">{founder.country}</div>
+                      <div className="font-medium">{founder.location_country}</div>
                       <div className="text-sm text-gray-500">{founder.sector}</div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge className={getStageColor(founder.stage)}>
+                    <Badge className={transformers.getStageColor(founder.stage)}>
                       {founder.stage}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="max-w-48">
-                      <p className="text-sm">{founder.bottleneck}</p>
+                      <p className="text-sm">{founder.top_bottleneck}</p>
                       <Badge 
-                        variant={founder.bottleneckSolved ? "default" : "secondary"}
+                        variant={founder.bottleneck_status === 'Solved' ? "default" : "secondary"}
                         className="mt-1 text-xs"
                       >
-                        {founder.bottleneckSolved ? "Solved" : "In Progress"}
+                        {founder.bottleneck_status}
                       </Badge>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
-                      {founder.advisors.map((advisor, idx) => (
+                      {founder.assignedAdvisors.map((advisor: string, idx: number) => (
                         <Badge key={idx} variant="outline" className="text-xs">
                           {advisor}
                         </Badge>
@@ -172,7 +124,7 @@ const FounderDirectory = () => {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
-                        {founder.storyReady ? (
+                        {founder.has_story ? (
                           <Check className="w-4 h-4 text-green-600" />
                         ) : (
                           <X className="w-4 h-4 text-gray-400" />
@@ -180,7 +132,7 @@ const FounderDirectory = () => {
                         <span className="text-xs">Story</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        {founder.testimonialsCollected ? (
+                        {founder.has_testimonial ? (
                           <Check className="w-4 h-4 text-green-600" />
                         ) : (
                           <X className="w-4 h-4 text-gray-400" />
