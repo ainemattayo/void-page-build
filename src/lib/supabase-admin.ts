@@ -2,6 +2,39 @@ import { supabase } from '@/integrations/supabase/client';
 
 // Admin dashboard data fetching functions
 export const adminQueries = {
+  // Get dashboard metrics with monthly comparison
+  async getDashboardMetricsWithComparison() {
+    // Get current totals
+    const { data: currentTotals, error: totalsError } = await supabase
+      .from('current_platform_totals')
+      .select('*')
+      .single();
+
+    if (totalsError) throw totalsError;
+
+    // Get monthly comparison data
+    const { data: comparisonData, error: comparisonError } = await supabase
+      .rpc('calculate_monthly_metrics_comparison');
+
+    if (comparisonError) throw comparisonError;
+
+    const comparison = comparisonData[0] || {
+      current_month_founders: 0,
+      previous_month_founders: 0,
+      current_month_advisors: 0,
+      previous_month_advisors: 0,
+      current_month_sessions: 0,
+      previous_month_sessions: 0,
+      current_month_case_studies: 0,
+      previous_month_case_studies: 0
+    };
+
+    return {
+      ...currentTotals,
+      monthlyComparison: comparison
+    };
+  },
+
   // Get dashboard metrics
   async getDashboardMetrics() {
     const { data, error } = await supabase
@@ -142,6 +175,26 @@ export const adminQueries = {
 
 // Helper functions for data transformation
 export const transformers = {
+  // Calculate percentage change and trend
+  calculateChange(current: number, previous: number) {
+    if (previous === 0) {
+      return {
+        change: current > 0 ? `+${current}` : '0',
+        trend: current > 0 ? 'up' : 'neutral',
+        percentage: current > 0 ? 100 : 0
+      };
+    }
+    
+    const difference = current - previous;
+    const percentage = Math.round((difference / previous) * 100);
+    
+    return {
+      change: difference >= 0 ? `+${difference}` : `${difference}`,
+      trend: difference > 0 ? 'up' : difference < 0 ? 'down' : 'neutral',
+      percentage: Math.abs(percentage)
+    };
+  },
+
   // Transform founder data for the directory table
   transformFounderData(founders: any[]) {
     return founders.map(founder => ({

@@ -2,14 +2,14 @@ import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Users, Settings, Home, FileText, ArrowUp, ArrowDown } from "lucide-react";
+import { Calendar, Users, Settings, FileText, ArrowUp, ArrowDown, Minus } from "lucide-react";
 import { adminQueries, transformers } from '@/lib/supabase-admin';
 import { useQuery } from '@tanstack/react-query';
 
 const FlightControl = () => {
-  const { data: metrics } = useQuery({
-    queryKey: ['dashboard-metrics'],
-    queryFn: adminQueries.getDashboardMetrics
+  const { data: metricsData, isLoading: metricsLoading } = useQuery({
+    queryKey: ['dashboard-metrics-with-comparison'],
+    queryFn: adminQueries.getDashboardMetricsWithComparison
   });
 
   const { data: timeline } = useQuery({
@@ -37,51 +37,105 @@ const FlightControl = () => {
     queryFn: adminQueries.getPendingTodos
   });
 
-  const kpiSnapshot = [
-    { 
-      metric: "Active Founders", 
-      value: metrics?.active_founders_count?.toString() || "0", 
-      change: "+3", 
-      trend: "up" 
-    },
-    { 
-      metric: "Active Advisors", 
-      value: metrics?.active_advisors_count?.toString() || "0", 
-      change: "+1", 
-      trend: "up" 
-    },
-    { 
-      metric: "Sessions This Month", 
-      value: metrics?.sessions_this_month?.toString() || "0", 
-      change: "+12", 
-      trend: "up" 
-    },
-    { 
-      metric: "Case Studies Ready", 
-      value: metrics?.case_studies_ready?.toString() || "0", 
-      change: "+2", 
-      trend: "up" 
+  // Calculate KPI metrics with real data
+  const kpiSnapshot = React.useMemo(() => {
+    if (!metricsData || metricsLoading) {
+      return [
+        { metric: "Active Founders", value: "0", change: "+0", trend: "neutral", percentage: 0 },
+        { metric: "Active Advisors", value: "0", change: "+0", trend: "neutral", percentage: 0 },
+        { metric: "Sessions This Month", value: "0", change: "+0", trend: "neutral", percentage: 0 },
+        { metric: "Case Studies Ready", value: "0", change: "+0", trend: "neutral", percentage: 0 }
+      ];
     }
-  ];
+
+    const { monthlyComparison } = metricsData;
+    
+    const foundersChange = transformers.calculateChange(
+      monthlyComparison.current_month_founders,
+      monthlyComparison.previous_month_founders
+    );
+    
+    const advisorsChange = transformers.calculateChange(
+      monthlyComparison.current_month_advisors,
+      monthlyComparison.previous_month_advisors
+    );
+    
+    const sessionsChange = transformers.calculateChange(
+      monthlyComparison.current_month_sessions,
+      monthlyComparison.previous_month_sessions
+    );
+    
+    const caseStudiesChange = transformers.calculateChange(
+      monthlyComparison.current_month_case_studies,
+      monthlyComparison.previous_month_case_studies
+    );
+
+    return [
+      { 
+        metric: "Active Founders", 
+        value: metricsData.total_active_founders?.toString() || "0",
+        change: foundersChange.change,
+        trend: foundersChange.trend,
+        percentage: foundersChange.percentage
+      },
+      { 
+        metric: "Active Advisors", 
+        value: metricsData.total_active_advisors?.toString() || "0",
+        change: advisorsChange.change,
+        trend: advisorsChange.trend,
+        percentage: advisorsChange.percentage
+      },
+      { 
+        metric: "Sessions This Month", 
+        value: metricsData.sessions_this_month?.toString() || "0",
+        change: sessionsChange.change,
+        trend: sessionsChange.trend,
+        percentage: sessionsChange.percentage
+      },
+      { 
+        metric: "Case Studies Ready", 
+        value: metricsData.case_studies_ready?.toString() || "0",
+        change: caseStudiesChange.change,
+        trend: caseStudiesChange.trend,
+        percentage: caseStudiesChange.percentage
+      }
+    ];
+  }, [metricsData, metricsLoading]);
+
+  const getTrendIcon = (trend: string) => {
+    switch (trend) {
+      case 'up':
+        return <ArrowUp className="h-4 w-4 text-green-600" />;
+      case 'down':
+        return <ArrowDown className="h-4 w-4 text-red-600" />;
+      default:
+        return <Minus className="h-4 w-4 text-gray-600" />;
+    }
+  };
+
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
+      case 'up': return 'text-green-600';
+      case 'down': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Quick Stats */}
+      {/* Quick Stats with Real Data */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {kpiSnapshot.map((kpi, index) => (
           <Card key={index}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{kpi.metric}</CardTitle>
-              {kpi.trend === "up" ? (
-                <ArrowUp className="h-4 w-4 text-green-600" />
-              ) : (
-                <ArrowDown className="h-4 w-4 text-red-600" />
-              )}
+              {getTrendIcon(kpi.trend)}
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{kpi.value}</div>
-              <p className={`text-xs ${kpi.trend === "up" ? "text-green-600" : "text-red-600"}`}>
+              <p className={`text-xs ${getTrendColor(kpi.trend)}`}>
                 {kpi.change} from last month
+                {kpi.percentage > 0 && ` (${kpi.percentage}%)`}
               </p>
             </CardContent>
           </Card>
