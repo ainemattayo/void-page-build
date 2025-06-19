@@ -48,8 +48,91 @@ export type Database = {
           },
         ]
       }
+      advisor_monthly_reports: {
+        Row: {
+          advisor_id: string | null
+          content: Json | null
+          created_at: string | null
+          id: string
+          month: number
+          submitted_at: string | null
+          year: number
+        }
+        Insert: {
+          advisor_id?: string | null
+          content?: Json | null
+          created_at?: string | null
+          id?: string
+          month: number
+          submitted_at?: string | null
+          year: number
+        }
+        Update: {
+          advisor_id?: string | null
+          content?: Json | null
+          created_at?: string | null
+          id?: string
+          month?: number
+          submitted_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_monthly_reports_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      advisor_testimonials: {
+        Row: {
+          advisor_id: string | null
+          created_at: string | null
+          founder_id: string | null
+          id: string
+          is_featured: boolean | null
+          testimonial_text: string
+        }
+        Insert: {
+          advisor_id?: string | null
+          created_at?: string | null
+          founder_id?: string | null
+          id?: string
+          is_featured?: boolean | null
+          testimonial_text: string
+        }
+        Update: {
+          advisor_id?: string | null
+          created_at?: string | null
+          founder_id?: string | null
+          id?: string
+          is_featured?: boolean | null
+          testimonial_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_testimonials_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advisor_testimonials_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisors: {
         Row: {
+          average_likelihood_to_recommend: number | null
+          average_session_rating: number | null
+          badge_level: string | null
           created_at: string | null
           email: string | null
           expertise_areas: string[] | null
@@ -60,6 +143,7 @@ export type Database = {
           location_city: string | null
           location_country: string | null
           notes: string | null
+          overall_score: number | null
           satisfaction_score: number | null
           sessions_completed: number | null
           status: string | null
@@ -68,6 +152,9 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          average_likelihood_to_recommend?: number | null
+          average_session_rating?: number | null
+          badge_level?: string | null
           created_at?: string | null
           email?: string | null
           expertise_areas?: string[] | null
@@ -78,6 +165,7 @@ export type Database = {
           location_city?: string | null
           location_country?: string | null
           notes?: string | null
+          overall_score?: number | null
           satisfaction_score?: number | null
           sessions_completed?: number | null
           status?: string | null
@@ -86,6 +174,9 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          average_likelihood_to_recommend?: number | null
+          average_session_rating?: number | null
+          badge_level?: string | null
           created_at?: string | null
           email?: string | null
           expertise_areas?: string[] | null
@@ -96,6 +187,7 @@ export type Database = {
           location_city?: string | null
           location_country?: string | null
           notes?: string | null
+          overall_score?: number | null
           satisfaction_score?: number | null
           sessions_completed?: number | null
           status?: string | null
@@ -369,11 +461,14 @@ export type Database = {
       sessions: {
         Row: {
           advisor_id: string | null
+          advisor_rating: number | null
           calendar_event_id: string | null
           created_at: string | null
           duration_minutes: number | null
           founder_id: string | null
+          founder_testimonial: string | null
           id: string
+          likelihood_to_recommend: number | null
           notes: string | null
           outcome: string | null
           rating: number | null
@@ -386,11 +481,14 @@ export type Database = {
         }
         Insert: {
           advisor_id?: string | null
+          advisor_rating?: number | null
           calendar_event_id?: string | null
           created_at?: string | null
           duration_minutes?: number | null
           founder_id?: string | null
+          founder_testimonial?: string | null
           id?: string
+          likelihood_to_recommend?: number | null
           notes?: string | null
           outcome?: string | null
           rating?: number | null
@@ -403,11 +501,14 @@ export type Database = {
         }
         Update: {
           advisor_id?: string | null
+          advisor_rating?: number | null
           calendar_event_id?: string | null
           created_at?: string | null
           duration_minutes?: number | null
           founder_id?: string | null
+          founder_testimonial?: string | null
           id?: string
+          likelihood_to_recommend?: number | null
           notes?: string | null
           outcome?: string | null
           rating?: number | null
@@ -561,6 +662,15 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_advisor_performance: {
+        Args: { advisor_uuid: string }
+        Returns: {
+          avg_rating: number
+          avg_likelihood: number
+          overall_score: number
+          badge_level: string
+        }[]
+      }
       calculate_monthly_metrics_comparison: {
         Args: Record<PropertyKey, never>
         Returns: {

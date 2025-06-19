@@ -170,6 +170,36 @@ export const adminQueries = {
 
     if (error) throw error;
     return data;
+  },
+
+  // Get advisor testimonials
+  async getAdvisorTestimonials() {
+    const { data, error } = await supabase
+      .from('advisor_testimonials')
+      .select(`
+        *,
+        advisors(full_name),
+        founders(full_name, startup_name)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get advisor monthly reports
+  async getAdvisorMonthlyReports() {
+    const { data, error } = await supabase
+      .from('advisor_monthly_reports')
+      .select(`
+        *,
+        advisors(full_name)
+      `)
+      .order('year', { ascending: false })
+      .order('month', { ascending: false });
+
+    if (error) throw error;
+    return data;
   }
 };
 
