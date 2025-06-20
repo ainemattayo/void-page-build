@@ -86,6 +86,56 @@ export type Database = {
           },
         ]
       }
+      advisor_resources: {
+        Row: {
+          advisor_id: string | null
+          created_at: string | null
+          description: string | null
+          download_url: string | null
+          file_url: string | null
+          id: string
+          is_published: boolean | null
+          resource_type: string | null
+          target_audience: string | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          advisor_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          download_url?: string | null
+          file_url?: string | null
+          id?: string
+          is_published?: boolean | null
+          resource_type?: string | null
+          target_audience?: string | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          advisor_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          download_url?: string | null
+          file_url?: string | null
+          id?: string
+          is_published?: boolean | null
+          resource_type?: string | null
+          target_audience?: string | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_resources_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_testimonials: {
         Row: {
           advisor_id: string | null
@@ -315,6 +365,94 @@ export type Database = {
         }
         Relationships: []
       }
+      founder_goals: {
+        Row: {
+          created_at: string | null
+          founder_id: string | null
+          goal_description: string | null
+          goal_title: string
+          id: string
+          progress_percentage: number | null
+          status: string | null
+          target_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          founder_id?: string | null
+          goal_description?: string | null
+          goal_title: string
+          id?: string
+          progress_percentage?: number | null
+          status?: string | null
+          target_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          founder_id?: string | null
+          goal_description?: string | null
+          goal_title?: string
+          id?: string
+          progress_percentage?: number | null
+          status?: string | null
+          target_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "founder_goals_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      founder_reflections: {
+        Row: {
+          content: string
+          created_at: string | null
+          founder_id: string | null
+          id: string
+          is_featured: boolean | null
+          reflection_type: string | null
+          shared_with_advisors: boolean | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          founder_id?: string | null
+          id?: string
+          is_featured?: boolean | null
+          reflection_type?: string | null
+          shared_with_advisors?: boolean | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          founder_id?: string | null
+          id?: string
+          is_featured?: boolean | null
+          reflection_type?: string | null
+          shared_with_advisors?: boolean | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "founder_reflections_founder_id_fkey"
+            columns: ["founder_id"]
+            isOneToOne: false
+            referencedRelation: "founders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       founders: {
         Row: {
           bottleneck_status: string | null
@@ -457,6 +595,50 @@ export type Database = {
           title?: string
         }
         Relationships: []
+      }
+      session_notes: {
+        Row: {
+          action_items: Json | null
+          ai_summary: string | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          key_insights: Json | null
+          notes_content: string | null
+          session_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          action_items?: Json | null
+          ai_summary?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          key_insights?: Json | null
+          notes_content?: string | null
+          session_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          action_items?: Json | null
+          ai_summary?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          key_insights?: Json | null
+          notes_content?: string | null
+          session_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_notes_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sessions: {
         Row: {

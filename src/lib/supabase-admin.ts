@@ -200,6 +200,82 @@ export const adminQueries = {
 
     if (error) throw error;
     return data;
+  },
+
+  // Get founder goals
+  async getFounderGoals() {
+    const { data, error } = await supabase
+      .from('founder_goals')
+      .select(`
+        *,
+        founders(full_name, startup_name)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get founder reflections
+  async getFounderReflections() {
+    const { data, error } = await supabase
+      .from('founder_reflections')
+      .select(`
+        *,
+        founders(full_name, startup_name)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get advisor resources
+  async getAdvisorResources() {
+    const { data, error } = await supabase
+      .from('advisor_resources')
+      .select(`
+        *,
+        advisors(full_name)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get session notes
+  async getSessionNotes() {
+    const { data, error } = await supabase
+      .from('session_notes')
+      .select(`
+        *,
+        sessions(
+          title,
+          session_date,
+          founders(full_name, startup_name),
+          advisors(full_name)
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // Get advisor founder assignments
+  async getAdvisorFounderAssignments() {
+    const { data, error } = await supabase
+      .from('advisor_founder_assignments')
+      .select(`
+        *,
+        advisors(full_name, expertise_areas),
+        founders(full_name, startup_name, sector)
+      `)
+      .order('assigned_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
   }
 };
 

@@ -1,15 +1,56 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Users, BookOpen, Target, FileText, CheckCircle } from "lucide-react";
+import { ArrowLeft, Calendar, Users, BookOpen, Target, FileText, CheckCircle, Download, ExternalLink } from "lucide-react";
+import { useQuery } from '@tanstack/react-query';
+import { founderQueries, founderHelpers } from '@/lib/supabase-founder';
 
 const FounderDashboard = () => {
+  // Demo founder ID - in real app this would come from auth context
+  const founderId = "demo-founder-id";
   const [currentMonth] = useState(2); // Simulating Month 2
+
+  // Fetch founder data
+  const { data: founderProfile } = useQuery({
+    queryKey: ['founder-profile', founderId],
+    queryFn: () => founderQueries.getFounderProfile(founderId)
+  });
+
+  const { data: assignedAdvisors = [] } = useQuery({
+    queryKey: ['assigned-advisors', founderId],
+    queryFn: () => founderQueries.getAssignedAdvisors(founderId)
+  });
+
+  const { data: sessions = [] } = useQuery({
+    queryKey: ['founder-sessions', founderId],
+    queryFn: () => founderQueries.getFounderSessions(founderId)
+  });
+
+  const { data: goals = [] } = useQuery({
+    queryKey: ['founder-goals', founderId],
+    queryFn: () => founderQueries.getFounderGoals(founderId)
+  });
+
+  const { data: reflections = [] } = useQuery({
+    queryKey: ['founder-reflections', founderId],
+    queryFn: () => founderQueries.getFounderReflections(founderId)
+  });
+
+  const { data: resources = [] } = useQuery({
+    queryKey: ['published-resources'],
+    queryFn: () => founderQueries.getPublishedResources()
+  });
+
+  // Calculate metrics
+  const upcomingSessions = founderHelpers.getUpcomingSessions(sessions);
+  const pastSessions = founderHelpers.getPastSessions(sessions);
+  const overallProgress = founderHelpers.calculateOverallProgress(goals);
+  const completedSessions = pastSessions.filter(s => s.status === 'completed').length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -71,18 +112,20 @@ const FounderDashboard = () => {
                     You're making great progress in your CoPilot journey. Here's what's coming up this month:
                   </p>
                   <div className="space-y-3">
-                    <div className="flex items-start">
-                      <CheckCircle className="h-5 w-5 text-green-500 mr-3 mt-0.5" />
-                      <span className="text-sm">Complete your second advisory session with Sarah Chen</span>
-                    </div>
-                    <div className="flex items-start">
-                      <Calendar className="h-5 w-5 text-blue-500 mr-3 mt-0.5" />
-                      <span className="text-sm">Submit your monthly reflection form</span>
-                    </div>
-                    <div className="flex items-start">
-                      <BookOpen className="h-5 w-5 text-purple-500 mr-3 mt-0.5" />
-                      <span className="text-sm">Prepare for Masterclass #1 next month</span>
-                    </div>
+                    {upcomingSessions.slice(0, 3).map((session, index) => (
+                      <div key={index} className="flex items-start">
+                        <Calendar className="h-5 w-5 text-blue-500 mr-3 mt-0.5" />
+                        <span className="text-sm">
+                          {session.title || 'Advisory Session'} - {founderHelpers.formatSessionDate(session.session_date)}
+                        </span>
+                      </div>
+                    ))}
+                    {goals.filter(g => g.status === 'active').slice(0, 2).map((goal, index) => (
+                      <div key={index} className="flex items-start">
+                        <Target className="h-5 w-5 text-green-500 mr-3 mt-0.5" />
+                        <span className="text-sm">Work on: {goal.goal_title}</span>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
@@ -93,76 +136,111 @@ const FounderDashboard = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">3</div>
+                    <div className="text-2xl font-bold text-blue-600">{completedSessions}</div>
                     <div className="text-sm text-gray-600">Sessions Completed</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-green-600">2</div>
+                    <div className="text-2xl font-bold text-green-600">{assignedAdvisors.length}</div>
                     <div className="text-sm text-gray-600">Active Advisors</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">85%</div>
+                    <div className="text-2xl font-bold text-purple-600">{overallProgress}%</div>
                     <div className="text-sm text-gray-600">Goal Progress</div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
+            {/* Goals Progress */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Goals Progress</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {goals.filter(g => g.status === 'active').map((goal) => (
+                  <div key={goal.id} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">{goal.goal_title}</span>
+                      <span className="text-sm text-gray-600">{goal.progress_percentage}%</span>
+                    </div>
+                    <Progress value={goal.progress_percentage} className="w-full" />
+                    {goal.goal_description && (
+                      <p className="text-sm text-gray-600">{goal.goal_description}</p>
+                    )}
+                  </div>
+                ))}
+                {goals.filter(g => g.status === 'active').length === 0 && (
+                  <p className="text-gray-500 text-center py-4">No active goals yet. Goals will be set during onboarding.</p>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Weekly Reflection */}
             <Card>
               <CardHeader>
-                <CardTitle>This Week's Reflection 💭</CardTitle>
+                <CardTitle>Latest Reflections 💭</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                  <p className="text-sm text-blue-800 font-medium">"What's 1 small win this week?"</p>
-                </div>
-                <Button className="w-full sm:w-auto">Share Your Win</Button>
+                {reflections.slice(0, 3).map((reflection) => (
+                  <div key={reflection.id} className="mb-4 p-4 bg-blue-50 rounded-lg">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-medium text-blue-800">{reflection.title}</h4>
+                      <Badge variant="outline" className="text-xs">
+                        {reflection.reflection_type}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-blue-700">{reflection.content.substring(0, 200)}...</p>
+                    <div className="text-xs text-blue-600 mt-2">
+                      {new Date(reflection.created_at).toLocaleDateString()}
+                      {reflection.shared_with_advisors && " • Shared with advisors"}
+                    </div>
+                  </div>
+                ))}
+                <Button className="w-full sm:w-auto">Share New Reflection</Button>
               </CardContent>
             </Card>
           </TabsContent>
 
           <TabsContent value="advisors" className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Users className="h-5 w-5 mr-2" />
-                    Sarah Chen
-                  </CardTitle>
-                  <Badge className="w-fit bg-blue-100 text-blue-800">Marketing Expert</Badge>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-gray-600">
-                    Former Head of Growth at TechStars. 8+ years scaling African startups. Expert in customer acquisition and pricing strategies.
-                  </p>
-                  <div className="space-y-2">
-                    <div className="text-xs text-gray-500">Next Session:</div>
-                    <div className="text-sm font-medium">March 15, 2025 • 3:00 PM EAT</div>
-                  </div>
-                  <Button size="sm" className="w-full">Schedule Next Session</Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Users className="h-5 w-5 mr-2" />
-                    Michael Adebayo
-                  </CardTitle>
-                  <Badge className="w-fit bg-green-100 text-green-800">Operations Expert</Badge>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-gray-600">
-                    COO at three successful startups. Specialist in operational efficiency and team scaling. Based in London, Nigerian roots.
-                  </p>
-                  <div className="space-y-2">
-                    <div className="text-xs text-gray-500">Last Session:</div>
-                    <div className="text-sm font-medium">February 28, 2025</div>
-                  </div>
-                  <Button size="sm" variant="outline" className="w-full">View Session Notes</Button>
-                </CardContent>
-              </Card>
+              {assignedAdvisors.map((advisor) => (
+                <Card key={advisor.id}>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Users className="h-5 w-5 mr-2" />
+                      {advisor.full_name}
+                    </CardTitle>
+                    <div className="flex gap-2">
+                      <Badge className="w-fit bg-blue-100 text-blue-800">
+                        {advisor.expertise_areas?.[0] || 'Expert'}
+                      </Badge>
+                      <Badge className="w-fit bg-purple-100 text-purple-800">
+                        {advisor.badge_level}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="text-sm text-gray-600">
+                      <p>📍 {advisor.location_city}, {advisor.location_country}</p>
+                      <p>⭐ {advisor.average_session_rating?.toFixed(1)}/5 rating • {advisor.sessions_completed} sessions completed</p>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-xs text-gray-500">Next Session:</div>
+                      <div className="text-sm font-medium">Schedule your next session</div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" className="flex-1">Schedule Session</Button>
+                      <Button size="sm" variant="outline">View Profile</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              {assignedAdvisors.length === 0 && (
+                <div className="col-span-2 text-center text-gray-500 py-8">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p>No advisors assigned yet. You'll be matched with advisors soon!</p>
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -173,20 +251,26 @@ const FounderDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                    <div>
-                      <div className="font-medium">Growth Strategy Session with Sarah</div>
-                      <div className="text-sm text-gray-600">March 15, 2025 • 3:00 PM EAT</div>
+                  {upcomingSessions.map((session) => (
+                    <div key={session.id} className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                      <div>
+                        <div className="font-medium">{session.title || 'Advisory Session'}</div>
+                        <div className="text-sm text-gray-600">
+                          {founderHelpers.formatSessionDate(session.session_date)} • {session.duration_minutes || 60} min
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          with {session.advisors?.full_name}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm">Join Call</Button>
+                        <Button size="sm" variant="outline">Reschedule</Button>
+                      </div>
                     </div>
-                    <Button size="sm">Join Call</Button>
-                  </div>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                    <div>
-                      <div className="font-medium">Operations Review with Michael</div>
-                      <div className="text-sm text-gray-600">March 22, 2025 • 2:00 PM EAT</div>
-                    </div>
-                    <Button size="sm" variant="outline">Reschedule</Button>
-                  </div>
+                  ))}
+                  {upcomingSessions.length === 0 && (
+                    <p className="text-center text-gray-500 py-4">No upcoming sessions scheduled.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -197,20 +281,30 @@ const FounderDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <div className="font-medium text-sm">Pricing Strategy Deep Dive</div>
-                      <div className="text-xs text-gray-600">Feb 28 with Sarah • 60 min</div>
+                  {pastSessions.slice(0, 10).map((session) => (
+                    <div key={session.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div>
+                        <div className="font-medium text-sm">{session.title || 'Advisory Session'}</div>
+                        <div className="text-xs text-gray-600">
+                          {founderHelpers.formatSessionDate(session.session_date)} with {session.advisors?.full_name} • {session.duration_minutes || 60} min
+                        </div>
+                        <div className="flex gap-2 mt-1">
+                          <Badge variant="outline" className="text-xs">
+                            {session.status}
+                          </Badge>
+                          {session.session_notes?.length > 0 && (
+                            <Badge variant="outline" className="text-xs text-blue-600">
+                              Notes Available
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <Button size="sm" variant="ghost">View Details</Button>
                     </div>
-                    <Button size="sm" variant="ghost">View Notes</Button>
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <div className="font-medium text-sm">Initial Assessment</div>
-                      <div className="text-xs text-gray-600">Feb 15 with Michael • 45 min</div>
-                    </div>
-                    <Button size="sm" variant="ghost">View Notes</Button>
-                  </div>
+                  ))}
+                  {pastSessions.length === 0 && (
+                    <p className="text-center text-gray-500 py-4">No session history yet.</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -226,22 +320,44 @@ const FounderDashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid md:grid-cols-2 gap-4">
-                  <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <div className="font-medium text-sm mb-2">Pricing Strategy Framework</div>
-                    <div className="text-xs text-gray-600">By Sarah Chen • Used by 50+ founders</div>
-                  </div>
-                  <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <div className="font-medium text-sm mb-2">Export Readiness Checklist</div>
-                    <div className="text-xs text-gray-600">Essential steps for international expansion</div>
-                  </div>
-                  <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <div className="font-medium text-sm mb-2">Pitch Deck Template</div>
-                    <div className="text-xs text-gray-600">Proven template for African startups</div>
-                  </div>
-                  <div className="p-4 border rounded-lg hover:bg-gray-50 cursor-pointer">
-                    <div className="font-medium text-sm mb-2">Financial Model Template</div>
-                    <div className="text-xs text-gray-600">Excel template for revenue projections</div>
-                  </div>
+                  {resources.map((resource) => (
+                    <div key={resource.id} className="p-4 border rounded-lg hover:bg-gray-50">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center">
+                          <span className="mr-2 text-lg">
+                            {founderHelpers.getResourceTypeIcon(resource.resource_type)}
+                          </span>
+                          <div>
+                            <div className="font-medium text-sm">{resource.title}</div>
+                            <div className="text-xs text-gray-600">
+                              By {resource.advisors?.full_name} • {resource.resource_type}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex gap-1">
+                          {resource.download_url && (
+                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
+                          {resource.file_url && (
+                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                              <ExternalLink className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      {resource.description && (
+                        <p className="text-xs text-gray-600 mt-2">{resource.description}</p>
+                      )}
+                    </div>
+                  ))}
+                  {resources.length === 0 && (
+                    <div className="col-span-2 text-center text-gray-500 py-8">
+                      <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                      <p>No resources available yet. Your advisors will share helpful resources here.</p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
