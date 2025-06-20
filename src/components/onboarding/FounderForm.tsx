@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, CheckCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface FounderFormProps {
   onBack: () => void;
@@ -25,11 +27,51 @@ const FounderForm = ({ onBack }: FounderFormProps) => {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Founder application submitted:", formData);
-    setSubmitted(true);
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase
+        .from('application_submissions')
+        .insert({
+          email: formData.name.includes('@') ? formData.name : `${formData.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
+          full_name: formData.name,
+          application_type: 'founder',
+          form_data: {
+            name: formData.name,
+            location: formData.location,
+            startupName: formData.startupName,
+            website: formData.website,
+            stage: formData.stage,
+            challenge: formData.challenge,
+            winDefinition: formData.winDefinition,
+            caseStudy: formData.caseStudy,
+            availability: formData.availability,
+            videoLink: formData.videoLink
+          }
+        });
+
+      if (error) throw error;
+
+      setSubmitted(true);
+      toast({
+        title: "Application Submitted!",
+        description: "We'll review your application and get back to you soon."
+      });
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit application. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -213,8 +255,8 @@ const FounderForm = ({ onBack }: FounderFormProps) => {
                 </p>
               </div>
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-                Submit Founder Application
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                {loading ? "Submitting..." : "Submit Founder Application"}
               </Button>
             </form>
           </CardContent>

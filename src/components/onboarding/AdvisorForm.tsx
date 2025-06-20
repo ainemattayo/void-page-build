@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, CheckCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdvisorFormProps {
   onBack: () => void;
@@ -16,7 +18,7 @@ const AdvisorForm = ({ onBack }: AdvisorFormProps) => {
     location: "",
     linkedin: "",
     email: "",
-    expertise: [],
+    expertise: [] as string[],
     experience: "",
     timezone: "",
     challengeType: "",
@@ -25,6 +27,8 @@ const AdvisorForm = ({ onBack }: AdvisorFormProps) => {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const expertiseOptions = [
     "Marketing", "Product", "Pricing", "Growth", "Operations", 
@@ -40,10 +44,48 @@ const AdvisorForm = ({ onBack }: AdvisorFormProps) => {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Advisor application submitted:", formData);
-    setSubmitted(true);
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase
+        .from('application_submissions')
+        .insert({
+          email: formData.email,
+          full_name: formData.name,
+          application_type: 'advisor',
+          form_data: {
+            name: formData.name,
+            location: formData.location,
+            linkedin: formData.linkedin,
+            email: formData.email,
+            expertise: formData.expertise,
+            experience: formData.experience,
+            timezone: formData.timezone,
+            challengeType: formData.challengeType,
+            availability: formData.availability,
+            publicProfile: formData.publicProfile
+          }
+        });
+
+      if (error) throw error;
+
+      setSubmitted(true);
+      toast({
+        title: "Application Submitted!",
+        description: "We'll review your application and get back to you soon."
+      });
+    } catch (error) {
+      console.error('Error submitting application:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit application. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -235,8 +277,8 @@ const AdvisorForm = ({ onBack }: AdvisorFormProps) => {
                 </select>
               </div>
 
-              <Button type="submit" className="w-full bg-green-600 hover:bg-green-700">
-                Submit Advisor Application
+              <Button type="submit" className="w-full bg-green-600 hover:bg-green-700" disabled={loading}>
+                {loading ? "Submitting..." : "Submit Advisor Application"}
               </Button>
             </form>
           </CardContent>
