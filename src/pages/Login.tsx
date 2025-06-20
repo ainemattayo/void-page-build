@@ -3,31 +3,95 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowLeft, Mail, CheckCircle } from "lucide-react";
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [userType, setUserType] = useState<'founder' | 'advisor'>('founder');
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const { signInWithMagicLink } = useAuth();
+  const { toast } = useToast();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login attempt:", { email, userType });
+    if (!email) return;
+
+    setLoading(true);
     
-    // Simulate login and redirect based on user type
-    if (userType === 'founder') {
-      navigate('/founder-dashboard');
-    } else {
-      navigate('/advisor-dashboard');
+    try {
+      const { error } = await signInWithMagicLink(email);
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        setEmailSent(true);
+        toast({
+          title: "Magic link sent!",
+          description: "Check your email for the sign-in link"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-8">
+            <Link to="/" className="inline-flex items-center text-gray-600 hover:text-blue-600 mb-4">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Home
+            </Link>
+            <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-xl flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-8 w-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Check Your Email</h1>
+            <p className="text-gray-600">We've sent a magic link to {email}</p>
+          </div>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <Mail className="h-12 w-12 mx-auto text-blue-500" />
+                <div>
+                  <h3 className="font-medium text-gray-900">Magic link sent!</h3>
+                  <p className="text-sm text-gray-600 mt-2">
+                    Click the link in your email to sign in to your CoPilot dashboard.
+                  </p>
+                </div>
+                <Button 
+                  onClick={() => setEmailSent(false)}
+                  variant="outline" 
+                  className="w-full"
+                >
+                  Try different email
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center px-4">
       <div className="max-w-md w-full">
-        {/* Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center text-gray-600 hover:text-blue-600 mb-4">
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -42,44 +106,13 @@ const Login = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Sign In</CardTitle>
+            <CardTitle>Sign In with Magic Link</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
-              {/* User Type Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  I am a:
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setUserType('founder')}
-                    className={`p-3 text-sm rounded-lg border ${
-                      userType === 'founder'
-                        ? 'bg-blue-50 border-blue-300 text-blue-700'
-                        : 'bg-white border-gray-300 text-gray-700'
-                    }`}
-                  >
-                    Founder
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setUserType('advisor')}
-                    className={`p-3 text-sm rounded-lg border ${
-                      userType === 'advisor'
-                        ? 'bg-green-50 border-green-300 text-green-700'
-                        : 'bg-white border-gray-300 text-gray-700'
-                    }`}
-                  >
-                    Advisor
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
+                  Email Address
                 </label>
                 <Input
                   type="email"
@@ -87,31 +120,16 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <Input
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  disabled={loading}
                 />
               </div>
 
               <Button 
                 type="submit" 
-                className={`w-full ${
-                  userType === 'founder' 
-                    ? 'bg-blue-600 hover:bg-blue-700' 
-                    : 'bg-green-600 hover:bg-green-700'
-                }`}
+                className="w-full"
+                disabled={loading || !email}
               >
-                Sign In as {userType === 'founder' ? 'Founder' : 'Advisor'}
+                {loading ? "Sending..." : "Send Magic Link"}
               </Button>
             </form>
 

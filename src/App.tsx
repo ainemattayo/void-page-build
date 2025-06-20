@@ -4,11 +4,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 import Index from "./pages/Index";
 import ApplySME from "./pages/ApplySME";
 import ApplyCoPilot from "./pages/ApplyCoPilot";
 import Onboarding from "./pages/Onboarding";
 import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import PendingApproval from "./pages/PendingApproval";
 import FounderDashboard from "./pages/FounderDashboard";
 import AdvisorDashboard from "./pages/AdvisorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -28,10 +31,27 @@ const App = () => (
           <Route path="/apply-copilot" element={<ApplyCoPilot />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/login" element={<Login />} />
-          <Route path="/founder-dashboard" element={<FounderDashboard />} />
-          <Route path="/advisor-dashboard" element={<AdvisorDashboard />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/pending-approval" element={<PendingApproval />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/founder-dashboard" element={
+            <ProtectedRoute requiredRole="founder">
+              <FounderDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/advisor-dashboard" element={
+            <ProtectedRoute requiredRole="advisor">
+              <AdvisorDashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin-dashboard" element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

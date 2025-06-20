@@ -5,46 +5,74 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Users, Award, MessageSquare, FileText, Star, Clock } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Award, MessageSquare, FileText, Star, Clock, LogOut } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import { advisorQueries, advisorHelpers } from '@/lib/supabase-advisor';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import AdvisorBadge from '@/components/advisor/AdvisorBadge';
 
 const AdvisorDashboard = () => {
-  // For demo purposes, using a hardcoded advisor ID
-  // In a real app, this would come from auth context
-  const advisorId = "example-advisor-id";
+  const { user, signOut } = useAuth();
+  const [advisorId, setAdvisorId] = useState<string | null>(null);
+
+  // Get advisor ID from authenticated user
+  useEffect(() => {
+    if (user) {
+      const getAdvisorId = async () => {
+        const { data } = await supabase
+          .from('advisors')
+          .select('id')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (data) {
+          setAdvisorId(data.id);
+        }
+      };
+      getAdvisorId();
+    }
+  }, [user]);
 
   const { data: advisor, isLoading: advisorLoading } = useQuery({
     queryKey: ['advisor-profile', advisorId],
-    queryFn: () => advisorQueries.getAdvisorProfile(advisorId)
+    queryFn: () => advisorId ? advisorQueries.getAdvisorProfile(advisorId) : null,
+    enabled: !!advisorId
   });
 
   const { data: assignedFounders = [], isLoading: foundersLoading } = useQuery({
     queryKey: ['assigned-founders', advisorId],
-    queryFn: () => advisorQueries.getAssignedFounders(advisorId)
+    queryFn: () => advisorId ? advisorQueries.getAssignedFounders(advisorId) : [],
+    enabled: !!advisorId
   });
 
   const { data: sessions = [], isLoading: sessionsLoading } = useQuery({
     queryKey: ['advisor-sessions', advisorId],
-    queryFn: () => advisorQueries.getAdvisorSessions(advisorId)
+    queryFn: () => advisorId ? advisorQueries.getAdvisorSessions(advisorId) : [],
+    enabled: !!advisorId
   });
 
   const { data: testimonials = [] } = useQuery({
     queryKey: ['advisor-testimonials', advisorId],
-    queryFn: () => advisorQueries.getAdvisorTestimonials(advisorId)
+    queryFn: () => advisorId ? advisorQueries.getAdvisorTestimonials(advisorId) : [],
+    enabled: !!advisorId
   });
 
   const { data: monthlyReports = [] } = useQuery({
     queryKey: ['advisor-monthly-reports', advisorId],
-    queryFn: () => advisorQueries.getAdvisorMonthlyReports(advisorId)
+    queryFn: () => advisorId ? advisorQueries.getAdvisorMonthlyReports(advisorId) : [],
+    enabled: !!advisorId
   });
 
   const impactMetrics = advisorHelpers.calculateImpactMetrics(sessions);
   const upcomingSessions = sessions.filter(s => s.status === 'scheduled' && new Date(s.session_date) > new Date());
   const recentSessions = sessions.filter(s => s.status === 'completed').slice(0, 5);
 
-  if (advisorLoading) {
+  const handleSignOut = async () => {
+    await signOut();
+  };
+
+  if (!advisorId || advisorLoading) {
     return <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
       <div>Loading advisor dashboard...</div>
     </div>;
@@ -64,13 +92,17 @@ const AdvisorDashboard = () => {
               <p className="text-sm text-gray-600">Welcome back, {advisor?.full_name || 'Advisor'}</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-4">
             {advisor && (
               <AdvisorBadge 
                 badgeLevel={advisor.badge_level || 'Blue Ribbon'} 
                 overallScore={advisor.overall_score || 0} 
               />
             )}
+            <Button onClick={handleSignOut} variant="ghost" size="sm">
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
           </div>
         </div>
       </div>
