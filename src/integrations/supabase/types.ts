@@ -180,7 +180,6 @@ export type Database = {
       }
       advisors: {
         Row: {
-          application_id: string | null
           average_likelihood_to_recommend: number | null
           average_session_rating: number | null
           badge_level: string | null
@@ -203,7 +202,6 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          application_id?: string | null
           average_likelihood_to_recommend?: number | null
           average_session_rating?: number | null
           badge_level?: string | null
@@ -226,7 +224,6 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          application_id?: string | null
           average_likelihood_to_recommend?: number | null
           average_session_rating?: number | null
           badge_level?: string | null
@@ -250,13 +247,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "advisors_application_id_fkey"
-            columns: ["application_id"]
-            isOneToOne: false
-            referencedRelation: "application_submissions"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "advisors_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -264,48 +254,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      application_submissions: {
-        Row: {
-          application_type: string
-          created_at: string
-          email: string
-          form_data: Json
-          full_name: string
-          id: string
-          rejection_reason: string | null
-          reviewed_at: string | null
-          reviewed_by: string | null
-          status: string
-          updated_at: string
-        }
-        Insert: {
-          application_type: string
-          created_at?: string
-          email: string
-          form_data: Json
-          full_name: string
-          id?: string
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Update: {
-          application_type?: string
-          created_at?: string
-          email?: string
-          form_data?: Json
-          full_name?: string
-          id?: string
-          rejection_reason?: string | null
-          reviewed_at?: string | null
-          reviewed_by?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       calendars: {
         Row: {
@@ -507,7 +455,6 @@ export type Database = {
       }
       founders: {
         Row: {
-          application_id: string | null
           bottleneck_status: string | null
           created_at: string | null
           email: string | null
@@ -528,7 +475,6 @@ export type Database = {
           website: string | null
         }
         Insert: {
-          application_id?: string | null
           bottleneck_status?: string | null
           created_at?: string | null
           email?: string | null
@@ -549,7 +495,6 @@ export type Database = {
           website?: string | null
         }
         Update: {
-          application_id?: string | null
           bottleneck_status?: string | null
           created_at?: string | null
           email?: string | null
@@ -570,13 +515,6 @@ export type Database = {
           website?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "founders_application_id_fkey"
-            columns: ["application_id"]
-            isOneToOne: false
-            referencedRelation: "application_submissions"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "founders_user_id_fkey"
             columns: ["user_id"]
@@ -906,10 +844,6 @@ export type Database = {
       }
     }
     Functions: {
-      approve_application: {
-        Args: { application_id: string; reviewer_id: string }
-        Returns: Json
-      }
       calculate_advisor_performance: {
         Args: { advisor_uuid: string }
         Returns: {
@@ -931,10 +865,6 @@ export type Database = {
           current_month_case_studies: number
           previous_month_case_studies: number
         }[]
-      }
-      reject_application: {
-        Args: { application_id: string; reviewer_id: string; reason: string }
-        Returns: Json
       }
     }
     Enums: {

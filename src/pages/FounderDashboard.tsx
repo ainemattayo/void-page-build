@@ -6,64 +6,39 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Calendar, Users, BookOpen, Target, FileText, CheckCircle, Download, ExternalLink, LogOut } from "lucide-react";
+import { ArrowLeft, Calendar, Users, BookOpen, Target, FileText, CheckCircle, Download, ExternalLink } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
 import { founderQueries, founderHelpers } from '@/lib/supabase-founder';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 
 const FounderDashboard = () => {
-  const { user, signOut } = useAuth();
-  const [founderId, setFounderId] = useState<string | null>(null);
+  // Demo founder ID - in real app this would come from auth context
+  const founderId = "demo-founder-id";
   const [currentMonth] = useState(2); // Simulating Month 2
-
-  // Get founder ID from authenticated user
-  useEffect(() => {
-    if (user) {
-      const getFounderId = async () => {
-        const { data } = await supabase
-          .from('founders')
-          .select('id')
-          .eq('user_id', user.id)
-          .single();
-        
-        if (data) {
-          setFounderId(data.id);
-        }
-      };
-      getFounderId();
-    }
-  }, [user]);
 
   // Fetch founder data
   const { data: founderProfile } = useQuery({
     queryKey: ['founder-profile', founderId],
-    queryFn: () => founderId ? founderQueries.getFounderProfile(founderId) : null,
-    enabled: !!founderId
+    queryFn: () => founderQueries.getFounderProfile(founderId)
   });
 
   const { data: assignedAdvisors = [] } = useQuery({
     queryKey: ['assigned-advisors', founderId],
-    queryFn: () => founderId ? founderQueries.getAssignedAdvisors(founderId) : [],
-    enabled: !!founderId
+    queryFn: () => founderQueries.getAssignedAdvisors(founderId)
   });
 
   const { data: sessions = [] } = useQuery({
     queryKey: ['founder-sessions', founderId],
-    queryFn: () => founderId ? founderQueries.getFounderSessions(founderId) : [],
-    enabled: !!founderId
+    queryFn: () => founderQueries.getFounderSessions(founderId)
   });
 
   const { data: goals = [] } = useQuery({
     queryKey: ['founder-goals', founderId],
-    queryFn: () => founderId ? founderQueries.getFounderGoals(founderId) : [],
-    enabled: !!founderId
+    queryFn: () => founderQueries.getFounderGoals(founderId)
   });
 
   const { data: reflections = [] } = useQuery({
     queryKey: ['founder-reflections', founderId],
-    queryFn: () => founderId ? founderQueries.getFounderReflections(founderId) : [],
-    enabled: !!founderId
+    queryFn: () => founderQueries.getFounderReflections(founderId)
   });
 
   const { data: resources = [] } = useQuery({
@@ -76,18 +51,6 @@ const FounderDashboard = () => {
   const pastSessions = founderHelpers.getPastSessions(sessions);
   const overallProgress = founderHelpers.calculateOverallProgress(goals);
   const completedSessions = pastSessions.filter(s => s.status === 'completed').length;
-
-  const handleSignOut = async () => {
-    await signOut();
-  };
-
-  if (!founderId) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center">
-        <div>Loading your dashboard...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -103,13 +66,7 @@ const FounderDashboard = () => {
               <p className="text-sm text-gray-600">Month {currentMonth} of 6 • Welcome to CoPilot</p>
             </div>
           </div>
-          <div className="flex items-center space-x-4">
-            <Badge className="bg-green-100 text-green-800">Active Pilot</Badge>
-            <Button onClick={handleSignOut} variant="ghost" size="sm">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
+          <Badge className="bg-green-100 text-green-800">Active Pilot</Badge>
         </div>
       </div>
 
@@ -379,17 +336,13 @@ const FounderDashboard = () => {
                         </div>
                         <div className="flex gap-1">
                           {resource.download_url && (
-                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" asChild>
-                              <a href={resource.download_url} download>
-                                <Download className="h-4 w-4" />
-                              </a>
+                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                              <Download className="h-4 w-4" />
                             </Button>
                           )}
                           {resource.file_url && (
-                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0" asChild>
-                              <a href={resource.file_url} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-4 w-4" />
-                              </a>
+                            <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                              <ExternalLink className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
