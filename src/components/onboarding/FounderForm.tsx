@@ -1,10 +1,11 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, CheckCircle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface FounderFormProps {
   onBack: () => void;
@@ -25,11 +26,49 @@ const FounderForm = ({ onBack }: FounderFormProps) => {
   });
 
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Founder application submitted:", formData);
-    setSubmitted(true);
+    setLoading(true);
+    
+    try {
+      const { error } = await supabase
+        .from('application_submissions')
+        .insert({
+          application_type: 'founder',
+          full_name: formData.name,
+          email: formData.name, // This should be email field
+          form_data: {
+            startupName: formData.startupName,
+            location: formData.location,
+            website: formData.website,
+            stage: formData.stage,
+            challenge: formData.challenge,
+            winDefinition: formData.winDefinition,
+            caseStudy: formData.caseStudy,
+            availability: formData.availability,
+            videoLink: formData.videoLink
+          }
+        });
+
+      if (error) throw error;
+
+      setSubmitted(true);
+      toast({
+        title: "Application Submitted!",
+        description: "We'll review your application and get back to you within 5-7 business days.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to submit application. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -60,7 +99,12 @@ const FounderForm = ({ onBack }: FounderFormProps) => {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back
           </Button>
-          <h1 className="text-2xl font-bold text-gray-900">Founder Application</h1>
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-green-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">T</span>
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900">Founder Application</h1>
+          </div>
         </div>
       </div>
 
@@ -213,8 +257,12 @@ const FounderForm = ({ onBack }: FounderFormProps) => {
                 </p>
               </div>
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-                Submit Founder Application
+              <Button 
+                type="submit" 
+                className="w-full bg-blue-600 hover:bg-blue-700"
+                disabled={loading}
+              >
+                {loading ? "Submitting..." : "Submit Founder Application"}
               </Button>
             </form>
           </CardContent>
