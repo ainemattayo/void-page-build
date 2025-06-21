@@ -9,6 +9,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, Check, X, Clock, User, Mail, MapPin, Calendar } from 'lucide-react';
+import { Tables } from '@/integrations/supabase/types';
+
+type DatabaseApplication = Tables<'application_submissions'>;
 
 interface Application {
   id: string;
@@ -21,6 +24,13 @@ interface Application {
   reviewed_by?: string;
   reviewed_at?: string;
   rejection_reason?: string;
+}
+
+interface RpcResponse {
+  success: boolean;
+  error?: string;
+  message?: string;
+  user_id?: string;
 }
 
 const ApplicationReview = () => {
@@ -40,7 +50,22 @@ const ApplicationReview = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setApplications(data || []);
+      
+      // Transform the data to match our Application interface
+      const transformedData: Application[] = (data || []).map((app: DatabaseApplication) => ({
+        id: app.id,
+        email: app.email,
+        full_name: app.full_name,
+        application_type: app.application_type as 'founder' | 'advisor',
+        form_data: app.form_data,
+        status: app.status as 'pending' | 'approved' | 'rejected',
+        created_at: app.created_at,
+        reviewed_by: app.reviewed_by || undefined,
+        reviewed_at: app.reviewed_at || undefined,
+        rejection_reason: app.rejection_reason || undefined,
+      }));
+      
+      setApplications(transformedData);
     } catch (error) {
       console.error('Error fetching applications:', error);
       toast({
@@ -69,14 +94,15 @@ const ApplicationReview = () => {
 
       if (error) throw error;
 
-      if (data.success) {
+      const response = data as RpcResponse;
+      if (response.success) {
         toast({
           title: "Application Approved",
           description: "The application has been approved and user account created."
         });
         fetchApplications();
       } else {
-        throw new Error(data.error);
+        throw new Error(response.error);
       }
     } catch (error) {
       console.error('Error approving application:', error);
@@ -103,7 +129,8 @@ const ApplicationReview = () => {
 
       if (error) throw error;
 
-      if (data.success) {
+      const response = data as RpcResponse;
+      if (response.success) {
         toast({
           title: "Application Rejected",
           description: "The application has been rejected."
@@ -111,7 +138,7 @@ const ApplicationReview = () => {
         setRejectionReason('');
         fetchApplications();
       } else {
-        throw new Error(data.error);
+        throw new Error(response.error);
       }
     } catch (error) {
       console.error('Error rejecting application:', error);
