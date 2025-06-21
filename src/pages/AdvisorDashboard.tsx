@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +10,7 @@ import { advisorQueries, advisorHelpers } from '@/lib/supabase-advisor';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import AdvisorBadge from '@/components/advisor/AdvisorBadge';
+import MonthlyReportsList from '@/components/advisor/MonthlyReportsList';
 
 const AdvisorDashboard = () => {
   const { user, signOut } = useAuth();
@@ -140,10 +140,11 @@ const AdvisorDashboard = () => {
         </Card>
 
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="founders">My Founders</TabsTrigger>
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
+            <TabsTrigger value="reports">Monthly Reports</TabsTrigger>
             <TabsTrigger value="feedback">Feedback</TabsTrigger>
           </TabsList>
 
@@ -285,6 +286,10 @@ const AdvisorDashboard = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-6">
+            {advisorId && <MonthlyReportsList advisorId={advisorId} />}
           </TabsContent>
 
           <TabsContent value="feedback" className="space-y-6">

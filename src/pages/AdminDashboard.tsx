@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +10,7 @@ import AdvisorDirectory from '@/components/admin/AdvisorDirectory';
 import SessionTracker from '@/components/admin/SessionTracker';
 import CaseStudyLibrary from '@/components/admin/CaseStudyLibrary';
 import ApplicationReview from '@/components/admin/ApplicationReview';
+import MonthlyReportsReview from '@/components/admin/MonthlyReportsReview';
 
 const AdminDashboard = () => {
   const { signOut } = useAuth();
@@ -40,12 +40,13 @@ const AdminDashboard = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="applications">Applications</TabsTrigger>
             <TabsTrigger value="founders">Founders</TabsTrigger>
             <TabsTrigger value="advisors">Advisors</TabsTrigger>
             <TabsTrigger value="sessions">Sessions</TabsTrigger>
+            <TabsTrigger value="reports">Monthly Reports</TabsTrigger>
             <TabsTrigger value="case-studies">Case Studies</TabsTrigger>
           </TabsList>
 
@@ -67,6 +68,10 @@ const AdminDashboard = () => {
 
           <TabsContent value="sessions">
             <SessionTracker />
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <MonthlyReportsReview />
           </TabsContent>
 
           <TabsContent value="case-studies">
